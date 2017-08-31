@@ -2,6 +2,7 @@ import os
 from osgeo import gdal
 import numpy
 import rasterio
+import pygeoprocessing
 
 _SCENE_ID = 'LC08_L1TP_042034_20130605_20170310_01_T1'
 _LANDSAT_DIR = os.path.join(os.path.expanduser('~'),
@@ -12,6 +13,8 @@ L8_NIR = os.path.join(_LANDSAT_DIR, _SCENE_ID + '_B5.TIF')
 
 def ndvi(red, nir):
     """Calculate NDVI from the two bands."""
+    red = red.astype(numpy.float)
+    nir = nir.astype(numpy.float)
     return (nir - red) / (nir + red)
 
 
@@ -32,8 +35,7 @@ def ndvi_gdal():
 
     new_band = new_dataset.GetRasterBand(1)
 
-    new_band.WriteArray(ndvi(
-        red_matrix.astype(numpy.float32), nir_matrix.astype(numpy.float32)))
+    new_band.WriteArray(ndvi(red_matrix, nir_matrix))
     new_band.ComputeStatistics(False)  # apprimations not permitted
     new_band = None
     new_dataset = None
@@ -48,8 +50,7 @@ def ndvi_rasterio():
     with rasterio.open(L8_NIR) as nir_raster:
         nir_matrix = nir_raster.read(1)
 
-    calculated_ndvi = ndvi(red_matrix.astype(numpy.float),
-                           nir_matrix.astype(numpy.float))
+    calculated_ndvi = ndvi(red_matrix, nir_matrix)
 
     with rasterio.open('ndvi_rasterio.tif', 'w', driver='GTiff',
                        height=red_matrix.shape[0],
@@ -59,14 +60,15 @@ def ndvi_rasterio():
         out_raster.write(calculated_ndvi, 1)
 
 
+def ndvi_pygeoprocessing():
+    red_raster_info = pygeoprocessing.get_raster_info(L8_RED)
+    pygeoprocessing.raster_calculator(
+        [(L8_RED, 1), (L8_NIR, 1)], ndvi,
+        'ndvi_pygeoprocessing.tif', gdal.GDT_Float32,
+        red_raster_info['nodata'][0], calc_raster_stats=True)
 
 
 if __name__ == '__main__':
     ndvi_gdal()
     ndvi_rasterio()
-
-
-
-
-
-
+    ndvi_pygeoprocessing()

@@ -33,6 +33,7 @@ def ndvi_gdal():
 
     new_band.WriteArray(ndvi(
         red_matrix.astype(numpy.float32), nir_matrix.astype(numpy.float32)))
+    new_band.ComputeStatistics(False)  # apprimations not permitted
     new_band = None
     new_dataset = None
 

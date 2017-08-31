@@ -1,6 +1,7 @@
 import os
 from osgeo import gdal
 import numpy
+import rasterio
 
 _SCENE_ID = 'LC08_L1TP_042034_20130605_20170310_01_T1'
 _LANDSAT_DIR = os.path.join(os.path.expanduser('~'),
@@ -38,8 +39,31 @@ def ndvi_gdal():
     new_dataset = None
 
 
+def ndvi_rasterio():
+    with rasterio.open(L8_RED) as red_raster:
+        red_matrix = red_raster.read(1)
+        source_crs = red_raster.crs
+        source_transform = red_raster.transform
+
+    with rasterio.open(L8_NIR) as nir_raster:
+        nir_matrix = nir_raster.read(1)
+
+    calculated_ndvi = ndvi(red_matrix.astype(numpy.float),
+                           nir_matrix.astype(numpy.float))
+
+    with rasterio.open('ndvi_rasterio.tif', 'w', driver='GTiff',
+                       height=red_matrix.shape[0],
+                       width=red_matrix.shape[1],
+                       count=1, dtype=numpy.float,
+                       crs=source_crs, transform=source_transform) as out_raster:
+        out_raster.write(calculated_ndvi, 1)
+
+
+
+
 if __name__ == '__main__':
     ndvi_gdal()
+    ndvi_rasterio()
 
 
 

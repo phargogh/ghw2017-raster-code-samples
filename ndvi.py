@@ -2,6 +2,7 @@ import os
 from osgeo import gdal
 import numpy
 import rasterio
+import rasterio.dtypes
 import pygeoprocessing
 
 _SCENE_ID = 'LC08_L1TP_042034_20130605_20170310_01_T1'
@@ -55,8 +56,9 @@ def ndvi_rasterio():
     with rasterio.open('ndvi_rasterio.tif', 'w', driver='GTiff',
                        height=red_matrix.shape[0],
                        width=red_matrix.shape[1],
-                       count=1, dtype=numpy.float,
-                       crs=source_crs, transform=source_transform) as out_raster:
+                       count=1, dtype=rasterio.dtypes.float64,
+                       crs=source_crs,
+                       transform=source_transform) as out_raster:
         out_raster.write(calculated_ndvi, 1)
 
 
